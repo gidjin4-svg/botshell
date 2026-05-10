@@ -220,7 +220,7 @@
         alert("Bitte einen gueltigen Telegram Bot Token eingeben.");
         return;
       }
-      const cmd = `BOTSHELL_TOKEN="${token}" bash <(curl -fsSL https://botshell.io/setup.sh)`;
+      const cmd = `BOTSHELL_TOKEN="${token}" bash <(curl -fsSL https://gidjin4-svg.github.io/botshell/setup.sh)`;
       document.getElementById("command").textContent = cmd;
       document.getElementById("result").style.display = "block";
       document.getElementById("copy-hint").textContent = "Klicken zum Kopieren";
