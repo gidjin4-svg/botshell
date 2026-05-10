@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BotShell — Telegram Bots leicht gemacht</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 20px;
+    }
+
+    .logo {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+    .logo span { color: #58a6ff; }
+
+    .tagline {
+      color: #8b949e;
+      font-size: 1rem;
+      margin-bottom: 60px;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 40px;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+      color: #e6edf3;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: #8b949e;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #e6edf3;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 20px;
+    }
+    input[type="text"]:focus { border-color: #58a6ff; }
+    input[type="text"]::placeholder { color: #484f58; }
+
+    button {
+      width: 100%;
+      background: #238636;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 13px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #2ea043; }
+
+    .result {
+      display: none;
+      margin-top: 28px;
+    }
+    .result label { margin-bottom: 6px; }
+
+    .command-box {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 14px;
+      font-family: monospace;
+      font-size: 0.82rem;
+      color: #58a6ff;
+      word-break: break-all;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      position: relative;
+    }
+    .command-box:hover { border-color: #58a6ff; }
+
+    .copy-hint {
+      font-size: 0.75rem;
+      color: #484f58;
+      margin-top: 6px;
+    }
+    .copy-hint.copied { color: #3fb950; }
+
+    .steps {
+      margin-top: 32px;
+      padding-top: 28px;
+      border-top: 1px solid #21262d;
+    }
+    .steps h3 {
+      font-size: 0.85rem;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+    .step {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 14px;
+      align-items: flex-start;
+    }
+    .step-num {
+      background: #21262d;
+      color: #58a6ff;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .step-text {
+      font-size: 0.88rem;
+      color: #8b949e;
+      line-height: 1.5;
+      padding-top: 3px;
+    }
+    .step-text a { color: #58a6ff; text-decoration: none; }
+    .step-text a:hover { text-decoration: underline; }
+
+    .footer {
+      margin-top: 48px;
+      color: #484f58;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+    .footer a { color: #484f58; }
+  </style>
+</head>
+<body>
+
+  <div class="logo">Bot<span>Shell</span></div>
+  <div class="tagline">Telegram Bots in unter 5 Minuten — auf deinem eigenen Server.</div>
+
+  <div class="card">
+    <h2>Deinen Bot einrichten</h2>
+
+    <label for="token">Telegram Bot Token</label>
+    <input type="text" id="token" placeholder="1234567890:AAH..." autocomplete="off" spellcheck="false">
+
+    <button onclick="generate()">Befehl generieren</button>
+
+    <div class="result" id="result">
+      <label>Diesen Befehl in dein Server-Terminal kopieren:</label>
+      <div class="command-box" id="command" onclick="copyCommand()"></div>
+      <div class="copy-hint" id="copy-hint">Klicken zum Kopieren</div>
+
+      <div class="steps">
+        <h3>Naechste Schritte</h3>
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">
+            <a href="https://cloud.oracle.com" target="_blank">Oracle Account erstellen</a> (kostenlos, Kreditkarte nur zur Verifizierung)
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">
+            VM anlegen: Compute → Instances → Create Instance → Ubuntu 22.04 → Create
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">
+            Cloud Shell oeffnen (Terminal-Icon oben rechts in Oracle) — kein SSH noetig
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-text">
+            Obigen Befehl einfuegen und Enter druecken. Fertig.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Open Source &middot; <a href="https://github.com/botshell" target="_blank">GitHub</a> &middot; Donate
+  </div>
+
+  <script>
+    function generate() {
+      const token = document.getElementById("token").value.trim();
+      if (!token || !token.includes(":")) {
+        alert("Bitte einen gueltigen Telegram Bot Token eingeben.");
+        return;
+      }
+      const cmd = `BOTSHELL_TOKEN="${token}" bash <(curl -fsSL https://botshell.io/setup.sh)`;
+      document.getElementById("command").textContent = cmd;
+      document.getElementById("result").style.display = "block";
+      document.getElementById("copy-hint").textContent = "Klicken zum Kopieren";
+      document.getElementById("copy-hint").className = "copy-hint";
+    }
+
+    function copyCommand() {
+      const text = document.getElementById("command").textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        document.getElementById("copy-hint").textContent = "Kopiert!";
+        document.getElementById("copy-hint").className = "copy-hint copied";
+      });
+    }
+
+    document.getElementById("token").addEventListener("keydown", e => {
+      if (e.key === "Enter") generate();
+    });
+  </script>
+
+</body>
+</html>
