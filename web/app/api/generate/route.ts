@@ -100,21 +100,30 @@ Tipp: Für 24/7-Betrieb (auch wenn PC aus ist) empfehlen wir Google Cloud (€1,
   }
 
   if (tier === "hetzner") {
-    return `Dein Bot ist fertig! Für den Hetzner-Tier brauchst du:
+    return `Dein Bot ist fertig! So richtest du ihn ein:
 
-1. Hetzner Account erstellen → hetzner.com (CAX11, ~€4/Monat)
-2. Ubuntu 22.04 VM anlegen
-3. Diesen Befehl in deiner VM ausführen:
+Schritt 1 — Claude Pro Abo (einmalig)
+Gehe zu anthropic.com/claude → "Try Claude" → Pro oder Max Abo abschließen.
+Ohne Abo funktioniert Claude CLI nicht.
+
+Schritt 2 — Hetzner Server
+Erstelle einen Account auf hetzner.com und lege eine neue VM an:
+Typ: CAX11 | OS: Ubuntu 22.04 | Kosten: ~€4/Monat
+
+Schritt 3 — Bot installieren
+Verbinde dich per SSH mit deiner VM und führe diesen Befehl aus:
 
 BOTSHELL_TOKEN="${form.telegramToken}" bash <(curl -fsSL https://gidjin4-svg.github.io/botshell/setup.sh)
 
-4. Claude CLI installieren: npm install -g @anthropic-ai/claude-code
-5. claude auth (einmalig, braucht Claude Pro/Max Abo)
+Schritt 4 — Claude CLI einrichten (einmalig)
+npm install -g @anthropic-ai/claude-code
+claude auth
+
+Ein Browser-Fenster öffnet sich — melde dich mit deinem Anthropic-Konto an.
+Danach läuft dein Bot 24/7 und ist über Telegram steuerbar.
 
 Bot-Name: ${form.botName}
-Was er kann: ${botSummary}
-
-Dein Bot wird dann über Telegram steuerbar sein.`;
+Was er kann: ${botSummary}`;
   }
 
   return `Danke für deine Zahlung! Dein Bot wird jetzt eingerichtet.
