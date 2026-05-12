@@ -85,6 +85,20 @@ function getInstructions(tier: string, form: { telegramToken: string; groqKey: s
   const botCode = generateBotCode(botSummary, tier, form);
   const encodedCode = Buffer.from(botCode).toString("base64");
 
+  if (tier === "local") {
+    return `Dein Bot ist fertig! So startest du ihn auf deinem PC:
+
+1. Lade das Setup-Paket herunter und entpacke es
+2. Windows: setup-lokal.bat ausführen
+   Mac/Linux: setup-lokal.sh ausführen
+3. Dein Bot läuft — solange dieses Fenster offen ist
+
+Bot-Name: ${form.botName}
+Was er kann: ${botSummary}
+
+Tipp: Für 24/7-Betrieb (auch wenn PC aus ist) empfehlen wir Google Cloud (€1,90 einmalig).`;
+  }
+
   if (tier === "hetzner") {
     return `Dein Bot ist fertig! Für den Hetzner-Tier brauchst du:
 

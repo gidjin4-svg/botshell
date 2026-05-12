@@ -9,6 +9,7 @@ interface Message { role: Role; content: string; }
 interface FormData { email: string; telegramToken: string; botName: string; }
 
 const TIERS = [
+  { id: "local",   label: "Lokal (PC)",           desc: "Bot läuft auf deinem PC. Kein Server, kein Geld — PC muss an bleiben.",        price: "Gratis",        requiresPC: true },
   { id: "gcloud",  label: "Google Cloud",         desc: "24/7 auf Google Cloud VM. Einmalige Einrichtung — danach für immer kostenlos.", price: "€1,90 einmalig", requiresPC: true },
   { id: "render",  label: "Render.com",           desc: "Einfachstes Hosting, automatisches Deploy.",                                    price: "€9,99 einmalig", requiresPC: false },
   { id: "hetzner", label: "Hetzner + Claude CLI", desc: "Volle Power: eigener Server + Claude CLI.",                                     price: "~€4/Monat",     requiresPC: true },
