@@ -49,9 +49,7 @@ function GroqTutorialModal({ onClose }: { onClose: () => void }) {
           className="mt-5 block w-full text-center bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-2.5 text-sm font-semibold transition-colors">
           Zu Groq öffnen →
         </a>
-        <button onClick={onClose} className="mt-2 w-full text-xs text-gray-600 hover:text-gray-400 py-1">
-          Schließen
-        </button>
+        <button onClick={onClose} className="mt-2 w-full text-xs text-gray-600 hover:text-gray-400 py-1">Schließen</button>
       </div>
     </div>
   );
@@ -86,13 +84,9 @@ function BotFatherModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-export default function Home() {
-  const [groqKeyInput, setGroqKeyInput] = useState("");
-  const [groqKeyConfirmed, setGroqKeyConfirmed] = useState(false);
-  const [showGroqTutorial, setShowGroqTutorial] = useState(false);
-  const [showBotFatherModal, setShowBotFatherModal] = useState(false);
-
-  const [messages, setMessages] = useState<Message[]>([]);
+// ── Chat-Kern (eigene Komponente — key-Reset zerstört alles sauber) ────────
+function Chat({ groqKey, onChangeKey }: { groqKey: string; onChangeKey: () => void }) {
+  const [messages, setMessages] = useState<Message[]>([{ role: "assistant", content: WELCOME }]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<Step>("describe");
@@ -103,6 +97,7 @@ export default function Home() {
   const [botSummary, setBotSummary] = useState("");
   const [copied, setCopied] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [showBotFatherModal, setShowBotFatherModal] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -110,37 +105,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
-
-  useEffect(() => {
-    if (groqKeyConfirmed) setMessages([{ role: "assistant", content: WELCOME }]);
-  }, [groqKeyConfirmed]);
-
-  // Setzt nur den Chat zurück — Groq Key bleibt
-  function handleRestart() {
-    setMessages([{ role: "assistant", content: WELCOME }]);
-    setStep("describe");
-    setSelectedTier(null);
-    setForm({ email: "", telegramToken: "", botName: "" });
-    setShowTiers(false);
-    setShowForm(false);
-    setBotSummary("");
-    setInput("");
-    setCopied(false);
-  }
-
-  // Setzt alles zurück — zurück zum Key-Screen
-  function handleChangeKey() {
-    setGroqKeyConfirmed(false);
-    setMessages([]);
-    setStep("describe");
-    setSelectedTier(null);
-    setForm({ email: "", telegramToken: "", botName: "" });
-    setShowTiers(false);
-    setShowForm(false);
-    setBotSummary("");
-    setInput("");
-    setCopied(false);
-  }
 
   async function copyInstructions() {
     const last = messages.filter(m => m.role === "assistant").at(-1);
@@ -161,7 +125,7 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages, step, botSummary, groqKey: groqKeyInput }),
+        body: JSON.stringify({ messages: newMessages, step, botSummary, groqKey }),
       });
       if (!res.ok) throw new Error();
       const reader = res.body!.getReader();
@@ -210,7 +174,7 @@ export default function Home() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier: selectedTier, form: { ...form, groqKey: groqKeyInput }, botSummary }),
+        body: JSON.stringify({ tier: selectedTier, form: { ...form, groqKey }, botSummary }),
       });
       const data = await res.json();
       if (data.checkoutUrl) {
@@ -224,64 +188,26 @@ export default function Home() {
     finally { setLoading(false); }
   }
 
-  // ── Groq Key Screen ───────────────────────────────────────────────────────
-  if (!groqKeyConfirmed) {
-    return (
-      <>
-        {showGroqTutorial && <GroqTutorialModal onClose={() => setShowGroqTutorial(false)} />}
-        <div className="flex flex-col items-center justify-center h-full px-4">
-          <div className="text-2xl font-bold tracking-tight mb-1">Bot<span className="text-blue-400">Shell</span></div>
-          <div className="text-sm text-gray-500 mb-2">Telegram Bots in unter 10 Minuten</div>
-          <div className="text-xs text-gray-600 text-center max-w-xs mb-10 leading-relaxed">
-            Beschreibe deinen Bot — wir generieren den Code, richten den Server ein und du bist fertig.
-          </div>
-          <div className="w-full max-w-sm">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs text-gray-500">Groq API Key</label>
-              <button onClick={() => setShowGroqTutorial(true)} className="text-xs text-blue-400 hover:underline">
-                Wie bekomme ich einen Key? →
-              </button>
-            </div>
-            <input
-              className="w-full bg-[#161b22] border border-[#30363d] rounded-xl px-4 py-3 text-sm font-mono text-[#e6edf3] focus:outline-none focus:border-blue-400 mb-3"
-              placeholder="gsk_..."
-              value={groqKeyInput}
-              onChange={e => setGroqKeyInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && groqKeyInput.startsWith("gsk_") && setGroqKeyConfirmed(true)}
-              autoFocus
-            />
-            <button
-              onClick={() => setGroqKeyConfirmed(true)}
-              disabled={!groqKeyInput.startsWith("gsk_")}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded-xl py-3 text-sm font-semibold transition-colors">
-              Los geht's
-            </button>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  // ── Haupt-Chat ────────────────────────────────────────────────────────────
   return (
     <>
       {showBotFatherModal && <BotFatherModal onClose={() => setShowBotFatherModal(false)} />}
       <div className="flex flex-col h-full max-w-2xl mx-auto px-4 py-6">
 
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="text-xl font-bold tracking-tight">Bot<span className="text-blue-400">Shell</span></div>
           <div className="flex items-center gap-4">
-            <button onClick={handleRestart} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
-              Neu starten
-            </button>
-            <button onClick={handleChangeKey} className="text-xs text-gray-600 hover:text-gray-400 transition-colors">
+            {step !== "done" && (
+              <button onClick={() => { window.location.reload(); }}
+                className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+                Neu starten
+              </button>
+            )}
+            <button onClick={onChangeKey} className="text-xs text-gray-600 hover:text-gray-400 transition-colors">
               Key ändern
             </button>
           </div>
         </div>
 
-        {/* Chat */}
         <div className="flex-1 overflow-y-auto scrollbar-hide space-y-4 mb-4">
           {messages.map((msg, i) => (
             <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
@@ -318,14 +244,10 @@ export default function Home() {
               {TIERS.map(tier => {
                 const disabled = isMobile && tier.requiresPC;
                 return (
-                  <button key={tier.id}
-                    onClick={() => !disabled && selectTier(tier.id)}
-                    disabled={disabled}
+                  <button key={tier.id} onClick={() => !disabled && selectTier(tier.id)} disabled={disabled}
                     className={`w-full text-left rounded-xl p-4 transition-colors border ${
-                      disabled
-                        ? "bg-[#0d1117] border-[#21262d] opacity-40 cursor-not-allowed"
-                        : "bg-[#161b22] border-[#30363d] hover:border-blue-400"
-                    }`}>
+                      disabled ? "bg-[#0d1117] border-[#21262d] opacity-40 cursor-not-allowed"
+                             : "bg-[#161b22] border-[#30363d] hover:border-blue-400"}`}>
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="flex items-center gap-2">
@@ -359,9 +281,7 @@ export default function Home() {
                   />
                   {f.hint && (
                     <button type="button" onClick={() => setShowBotFatherModal(true)}
-                      className="text-xs text-blue-400 hover:underline mt-1 text-left">
-                      {f.hint}
-                    </button>
+                      className="text-xs text-blue-400 hover:underline mt-1 text-left">{f.hint}</button>
                   )}
                 </div>
               ))}
@@ -373,7 +293,7 @@ export default function Home() {
           )}
 
           {step === "done" && (
-            <button onClick={handleRestart}
+            <button onClick={() => window.location.reload()}
               className="w-full mt-2 border border-[#30363d] hover:border-blue-400 text-gray-400 hover:text-[#e6edf3] rounded-xl py-3 text-sm transition-colors">
               Neuen Bot erstellen
             </button>
@@ -382,7 +302,6 @@ export default function Home() {
           <div ref={bottomRef} />
         </div>
 
-        {/* Input */}
         {step !== "tier" && step !== "form" && step !== "done" && (
           <div className="flex gap-2">
             <input
@@ -403,4 +322,54 @@ export default function Home() {
       </div>
     </>
   );
+}
+
+// ── Root: verwaltet nur den Groq Key ─────────────────────────────────────
+export default function Home() {
+  const [groqKeyInput, setGroqKeyInput] = useState("");
+  const [groqKeyConfirmed, setGroqKeyConfirmed] = useState(false);
+  const [showGroqTutorial, setShowGroqTutorial] = useState(false);
+  const [chatKey, setChatKey] = useState(0);
+
+  function handleChangeKey() {
+    setGroqKeyConfirmed(false);
+    setGroqKeyInput("");
+  }
+
+  if (!groqKeyConfirmed) {
+    return (
+      <>
+        {showGroqTutorial && <GroqTutorialModal onClose={() => setShowGroqTutorial(false)} />}
+        <div className="flex flex-col items-center justify-center h-full px-4">
+          <div className="text-2xl font-bold tracking-tight mb-1">Bot<span className="text-blue-400">Shell</span></div>
+          <div className="text-sm text-gray-500 mb-2">Telegram Bots in unter 10 Minuten</div>
+          <div className="text-xs text-gray-600 text-center max-w-xs mb-10 leading-relaxed">
+            Beschreibe deinen Bot — wir generieren den Code, richten den Server ein und du bist fertig.
+          </div>
+          <div className="w-full max-w-sm">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs text-gray-500">Groq API Key</label>
+              <button onClick={() => setShowGroqTutorial(true)} className="text-xs text-blue-400 hover:underline">
+                Wie bekomme ich einen Key? →
+              </button>
+            </div>
+            <input
+              className="w-full bg-[#161b22] border border-[#30363d] rounded-xl px-4 py-3 text-sm font-mono text-[#e6edf3] focus:outline-none focus:border-blue-400 mb-3"
+              placeholder="gsk_..."
+              value={groqKeyInput}
+              onChange={e => setGroqKeyInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && groqKeyInput.startsWith("gsk_") && setGroqKeyConfirmed(true)}
+              autoFocus
+            />
+            <button onClick={() => setGroqKeyConfirmed(true)} disabled={!groqKeyInput.startsWith("gsk_")}
+              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded-xl py-3 text-sm font-semibold transition-colors">
+              Los geht's
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return <Chat key={chatKey} groqKey={groqKeyInput} onChangeKey={handleChangeKey} />;
 }
