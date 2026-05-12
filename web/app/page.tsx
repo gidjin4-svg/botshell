@@ -44,9 +44,9 @@ function BotFatherModal({ onClose }: { onClose: () => void }) {
 }
 
 const TIERS = [
-  { id: "gcloud",  label: "Google Cloud",         desc: "24/7 auf Google Cloud VM. Einmalige Einrichtung — danach für immer kostenlos.", price: "€1,90 einmalig" },
-  { id: "render",  label: "Render.com",           desc: "Einfachstes Hosting, automatisches Deploy.",                                    price: "€9,99 einmalig" },
-  { id: "hetzner", label: "Hetzner + Claude CLI", desc: "Volle Power: eigener Server + Claude CLI.",                                     price: "~€4/Monat" },
+  { id: "gcloud",  label: "Google Cloud",         desc: "24/7 auf Google Cloud VM. Einmalige Einrichtung — danach für immer kostenlos.", price: "€1,90 einmalig", requiresPC: true },
+  { id: "render",  label: "Render.com",           desc: "Einfachstes Hosting, automatisches Deploy.",                                    price: "€9,99 einmalig", requiresPC: false },
+  { id: "hetzner", label: "Hetzner + Claude CLI", desc: "Volle Power: eigener Server + Claude CLI.",                                     price: "~€4/Monat",     requiresPC: true },
 ];
 
 export default function Home() {
@@ -63,7 +63,12 @@ export default function Home() {
   const [showForm, setShowForm] = useState(false);
   const [showBotFatherModal, setShowBotFatherModal] = useState(false);
   const [botSummary, setBotSummary] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setIsMobile(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768);
+  }, []);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
 
@@ -211,18 +216,35 @@ export default function Home() {
 
         {showTiers && (
           <div className="space-y-3">
-            {TIERS.map(tier => (
-              <button key={tier.id} onClick={() => selectTier(tier.id)}
-                className="w-full text-left bg-[#161b22] border border-[#30363d] hover:border-blue-400 rounded-xl p-4 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-semibold text-sm text-[#e6edf3]">{tier.label}</div>
-                    <div className="text-xs text-gray-500 mt-1">{tier.desc}</div>
+            {isMobile && (
+              <div className="text-xs text-yellow-500/80 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-2.5">
+                Einige Optionen erfordern einen PC zur Einrichtung und sind auf dem Handy deaktiviert.
+              </div>
+            )}
+            {TIERS.map(tier => {
+              const disabled = isMobile && tier.requiresPC;
+              return (
+                <button key={tier.id}
+                  onClick={() => !disabled && selectTier(tier.id)}
+                  disabled={disabled}
+                  className={`w-full text-left rounded-xl p-4 transition-colors border ${
+                    disabled
+                      ? "bg-[#0d1117] border-[#21262d] opacity-40 cursor-not-allowed"
+                      : "bg-[#161b22] border-[#30363d] hover:border-blue-400"
+                  }`}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-semibold text-sm text-[#e6edf3]">{tier.label}</div>
+                        {disabled && <span className="text-xs bg-[#30363d] text-gray-500 px-1.5 py-0.5 rounded">Nur PC</span>}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">{tier.desc}</div>
+                    </div>
+                    <div className="text-xs text-blue-400 font-semibold ml-4 whitespace-nowrap">{tier.price}</div>
                   </div>
-                  <div className="text-xs text-blue-400 font-semibold ml-4 whitespace-nowrap">{tier.price}</div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         )}
 
