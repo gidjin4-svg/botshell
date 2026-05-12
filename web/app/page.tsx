@@ -14,6 +14,8 @@ const TIERS = [
   { id: "hetzner", label: "Hetzner + Claude CLI", desc: "Volle Power: eigener Server + Claude CLI.",                                     price: "~€4/Monat",     requiresPC: true },
 ];
 
+const WELCOME = "Willkommen bei BotShell.\n\nBeschreibe in einem Satz was dein Telegram Bot tun soll — ich kümmere mich um den Rest.";
+
 function extractBotName(summary: string): string {
   const match = summary.toLowerCase().match(/(?:ein|einen|meinen?)\s+(\w{4,})\s+bot/);
   if (match) return match[1].charAt(0).toUpperCase() + match[1].slice(1) + " Bot";
@@ -24,11 +26,11 @@ function extractBotName(summary: string): string {
 
 function GroqTutorialModal({ onClose }: { onClose: () => void }) {
   const steps = [
-    { n: 1, text: <>Gehe zu <span className="text-blue-400 font-mono">console.groq.com</span> und klicke oben rechts auf <strong>Sign Up</strong></> },
-    { n: 2, text: <>Melde dich mit <strong>Google</strong> oder einer E-Mail an — kostenlos, keine Kreditkarte</> },
-    { n: 3, text: <>Im linken Menü klicke auf <strong>API Keys</strong></> },
-    { n: 4, text: <>Klicke auf <strong>Create API Key</strong>, gib einen Namen ein (z.B. "BotShell")</> },
-    { n: 5, text: <>Kopiere den Key — er beginnt mit <span className="font-mono text-green-400 text-xs">gsk_</span> — und füge ihn unten ein</> },
+    { n: 1, text: <>Gehe zu <span className="text-blue-400 font-mono">console.groq.com</span> und klicke auf <strong>Sign Up</strong></> },
+    { n: 2, text: <>Anmelden mit <strong>Google</strong> oder E-Mail — kostenlos, keine Kreditkarte</> },
+    { n: 3, text: <>Im linken Menü auf <strong>API Keys</strong> klicken</> },
+    { n: 4, text: <>Auf <strong>Create API Key</strong> klicken, Namen eingeben (z.B. "BotShell")</> },
+    { n: 5, text: <>Key kopieren — beginnt mit <span className="font-mono text-green-400 text-xs">gsk_</span> — und hier einfügen</> },
   ];
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4" onClick={onClose}>
@@ -57,11 +59,11 @@ function GroqTutorialModal({ onClose }: { onClose: () => void }) {
 
 function BotFatherModal({ onClose }: { onClose: () => void }) {
   const steps = [
-    { n: 1, text: <>Öffne Telegram und suche nach <span className="text-blue-400 font-mono">@BotFather</span></> },
+    { n: 1, text: <>Öffne Telegram, suche nach <span className="text-blue-400 font-mono">@BotFather</span></> },
     { n: 2, text: <>Schicke den Befehl <span className="font-mono bg-[#0d1117] px-1.5 py-0.5 rounded text-xs">/newbot</span></> },
-    { n: 3, text: <>Wähle einen <strong>Namen</strong> für deinen Bot (z.B. <span className="italic">Mein Ideen Bot</span>)</> },
+    { n: 3, text: <>Wähle einen <strong>Namen</strong> (z.B. <span className="italic">Mein Ideen Bot</span>)</> },
     { n: 4, text: <>Wähle einen <strong>Benutzernamen</strong> — muss auf <span className="font-mono bg-[#0d1117] px-1.5 py-0.5 rounded text-xs">bot</span> enden</> },
-    { n: 5, text: <>BotFather schickt deinen Token: <span className="font-mono text-xs text-green-400">1234567890:AAH...</span> — kopieren &amp; einfügen</> },
+    { n: 5, text: <>Token kopieren: <span className="font-mono text-xs text-green-400">1234567890:AAH...</span> — und hier einfügen</> },
   ];
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4" onClick={onClose}>
@@ -83,8 +85,6 @@ function BotFatherModal({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
-
-const WELCOME = "Willkommen bei BotShell.\n\nBeschreibe in einem Satz was dein Telegram Bot tun soll — ich kümmere mich um den Rest.";
 
 export default function Home() {
   const [groqKeyInput, setGroqKeyInput] = useState("");
@@ -115,8 +115,31 @@ export default function Home() {
     if (groqKeyConfirmed) setMessages([{ role: "assistant", content: WELCOME }]);
   }, [groqKeyConfirmed]);
 
+  // Setzt nur den Chat zurück — Groq Key bleibt
   function handleRestart() {
-    window.location.reload();
+    setMessages([{ role: "assistant", content: WELCOME }]);
+    setStep("describe");
+    setSelectedTier(null);
+    setForm({ email: "", telegramToken: "", botName: "" });
+    setShowTiers(false);
+    setShowForm(false);
+    setBotSummary("");
+    setInput("");
+    setCopied(false);
+  }
+
+  // Setzt alles zurück — zurück zum Key-Screen
+  function handleChangeKey() {
+    setGroqKeyConfirmed(false);
+    setMessages([]);
+    setStep("describe");
+    setSelectedTier(null);
+    setForm({ email: "", telegramToken: "", botName: "" });
+    setShowTiers(false);
+    setShowForm(false);
+    setBotSummary("");
+    setInput("");
+    setCopied(false);
   }
 
   async function copyInstructions() {
@@ -134,7 +157,6 @@ export default function Home() {
     setMessages(newMessages);
     setInput("");
     setLoading(true);
-
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -202,7 +224,7 @@ export default function Home() {
     finally { setLoading(false); }
   }
 
-  // ── Groq Key eingeben ─────────────────────────────────────────────────────
+  // ── Groq Key Screen ───────────────────────────────────────────────────────
   if (!groqKeyConfirmed) {
     return (
       <>
@@ -210,16 +232,13 @@ export default function Home() {
         <div className="flex flex-col items-center justify-center h-full px-4">
           <div className="text-2xl font-bold tracking-tight mb-1">Bot<span className="text-blue-400">Shell</span></div>
           <div className="text-sm text-gray-500 mb-2">Telegram Bots in unter 10 Minuten</div>
-
           <div className="text-xs text-gray-600 text-center max-w-xs mb-10 leading-relaxed">
             Beschreibe deinen Bot — wir generieren den Code, richten den Server ein und du bist fertig.
           </div>
-
           <div className="w-full max-w-sm">
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs text-gray-500">Groq API Key</label>
-              <button onClick={() => setShowGroqTutorial(true)}
-                className="text-xs text-blue-400 hover:underline">
+              <button onClick={() => setShowGroqTutorial(true)} className="text-xs text-blue-400 hover:underline">
                 Wie bekomme ich einen Key? →
               </button>
             </div>
@@ -252,10 +271,14 @@ export default function Home() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="text-xl font-bold tracking-tight">Bot<span className="text-blue-400">Shell</span></div>
-          <button onClick={handleRestart}
-            className="text-xs text-gray-600 hover:text-gray-400 transition-colors">
-            Neu starten
-          </button>
+          <div className="flex items-center gap-4">
+            <button onClick={handleRestart} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+              Neu starten
+            </button>
+            <button onClick={handleChangeKey} className="text-xs text-gray-600 hover:text-gray-400 transition-colors">
+              Key ändern
+            </button>
+          </div>
         </div>
 
         {/* Chat */}
@@ -266,8 +289,7 @@ export default function Home() {
                 msg.role === "user" ? "bg-blue-600 text-white" : "bg-[#161b22] border border-[#30363d] text-[#e6edf3]"
               }`}>{msg.content}</div>
               {step === "done" && msg.role === "assistant" && i === messages.length - 1 && (
-                <button onClick={copyInstructions}
-                  className="mt-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors">
+                <button onClick={copyInstructions} className="mt-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors">
                   {copied ? "Kopiert!" : "Anleitung kopieren"}
                 </button>
               )}
@@ -307,7 +329,7 @@ export default function Home() {
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="flex items-center gap-2">
-                          <div className="font-semibold text-sm text-[#e6edf3]">{tier.label}</div>
+                          <span className="font-semibold text-sm text-[#e6edf3]">{tier.label}</span>
                           {disabled && <span className="text-xs bg-[#30363d] text-gray-500 px-1.5 py-0.5 rounded">Nur PC</span>}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">{tier.desc}</div>
@@ -343,12 +365,18 @@ export default function Home() {
                   )}
                 </div>
               ))}
-
               <button type="submit" disabled={loading}
                 className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg py-2.5 text-sm font-semibold transition-colors">
                 {selectedTier === "gcloud" ? "Weiter zur Zahlung (€1,90)" : selectedTier === "render" ? "Weiter zur Zahlung (€9,99)" : "Bot erstellen"}
               </button>
             </form>
+          )}
+
+          {step === "done" && (
+            <button onClick={handleRestart}
+              className="w-full mt-2 border border-[#30363d] hover:border-blue-400 text-gray-400 hover:text-[#e6edf3] rounded-xl py-3 text-sm transition-colors">
+              Neuen Bot erstellen
+            </button>
           )}
 
           <div ref={bottomRef} />
