@@ -324,42 +324,70 @@ function Chat({ groqKey, onChangeKey }: { groqKey: string; onChangeKey: () => vo
 }
 
 // ── Root: verwaltet nur den Groq Key ─────────────────────────────────────
+type Screen = "landing" | "key" | "chat";
+
 export default function Home() {
+  const [screen, setScreen] = useState<Screen>("landing");
   const [groqKeyInput, setGroqKeyInput] = useState("");
-  const [groqKeyConfirmed, setGroqKeyConfirmed] = useState(false);
   const [showGroqTutorial, setShowGroqTutorial] = useState(false);
-  const [chatKey, setChatKey] = useState(0);
 
   // Restore key from sessionStorage on mount
   useEffect(() => {
     const saved = sessionStorage.getItem("groq_key");
     if (saved?.startsWith("gsk_")) {
       setGroqKeyInput(saved);
-      setGroqKeyConfirmed(true);
+      setScreen("chat");
     }
   }, []);
 
   function confirmKey() {
     sessionStorage.setItem("groq_key", groqKeyInput);
-    setGroqKeyConfirmed(true);
+    setScreen("chat");
   }
 
-  function handleChangeKey() {
+  function goToStart() {
     sessionStorage.removeItem("groq_key");
-    setGroqKeyConfirmed(false);
     setGroqKeyInput("");
+    setScreen("landing");
   }
 
-  if (!groqKeyConfirmed) {
+  // ── Landing ───────────────────────────────────────────────────────────────
+  if (screen === "landing") {
+    return (
+      <div className="flex flex-col items-center justify-center h-full px-4">
+        <div className="text-3xl font-bold tracking-tight mb-1">Bot<span className="text-blue-400">Shell</span></div>
+        <div className="text-sm text-gray-500 mb-12">Telegram Bots in unter 10 Minuten</div>
+
+        <div className="w-full max-w-sm space-y-3">
+          <div className="text-xs text-gray-600 text-center uppercase tracking-wide mb-4">Welche KI soll deinen Bot bauen?</div>
+
+          <button onClick={() => setScreen("key")}
+            className="w-full text-left bg-[#161b22] border border-[#30363d] hover:border-green-500 rounded-xl p-4 transition-colors">
+            <div className="font-semibold text-sm text-[#e6edf3]">Kostenlos — Groq AI</div>
+            <div className="text-xs text-gray-500 mt-1">Du bringst deinen eigenen Groq Key. Kein Cent für den Chat.</div>
+            <div className="text-xs text-green-400 mt-2">Gratis</div>
+          </button>
+
+          <button disabled
+            className="w-full text-left bg-[#0d1117] border border-[#21262d] rounded-xl p-4 opacity-40 cursor-not-allowed">
+            <div className="font-semibold text-sm text-[#e6edf3]">Premium — Claude AI</div>
+            <div className="text-xs text-gray-500 mt-1">Bessere Antworten, mehr Präzision.</div>
+            <div className="text-xs text-gray-600 mt-2">Demnächst verfügbar</div>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Groq Key ──────────────────────────────────────────────────────────────
+  if (screen === "key") {
     return (
       <>
         {showGroqTutorial && <GroqTutorialModal onClose={() => setShowGroqTutorial(false)} />}
         <div className="flex flex-col items-center justify-center h-full px-4">
           <div className="text-2xl font-bold tracking-tight mb-1">Bot<span className="text-blue-400">Shell</span></div>
-          <div className="text-sm text-gray-500 mb-2">Telegram Bots in unter 10 Minuten</div>
-          <div className="text-xs text-gray-600 text-center max-w-xs mb-10 leading-relaxed">
-            Beschreibe deinen Bot — wir generieren den Code, richten den Server ein und du bist fertig.
-          </div>
+          <div className="text-sm text-gray-500 mb-10">Groq API Key eingeben</div>
+
           <div className="w-full max-w-sm">
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs text-gray-500">Groq API Key</label>
@@ -379,11 +407,15 @@ export default function Home() {
               className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded-xl py-3 text-sm font-semibold transition-colors">
               Los geht's
             </button>
+            <button onClick={() => setScreen("landing")} className="w-full text-center text-xs text-gray-600 hover:text-gray-400 mt-3">
+              ← Zurück
+            </button>
           </div>
         </div>
       </>
     );
   }
 
-  return <Chat key={chatKey} groqKey={groqKeyInput} onChangeKey={handleChangeKey} />;
+  // ── Chat ──────────────────────────────────────────────────────────────────
+  return <Chat key={groqKeyInput} groqKey={groqKeyInput} onChangeKey={goToStart} />;
 }
