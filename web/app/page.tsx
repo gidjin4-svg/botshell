@@ -8,6 +8,41 @@ type Step = "describe" | "confirm" | "audit" | "explain" | "tier" | "form" | "do
 interface Message { role: Role; content: string; }
 interface FormData { email: string; telegramToken: string; botName: string; }
 
+function BotFatherModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4" onClick={onClose}>
+      <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-6 max-w-sm w-full" onClick={e => e.stopPropagation()}>
+        <div className="text-sm font-semibold text-[#e6edf3] mb-4">Telegram Bot Token erstellen</div>
+        <ol className="space-y-3 text-sm text-gray-300">
+          <li className="flex gap-3">
+            <span className="text-blue-400 font-bold shrink-0">1.</span>
+            <span>Öffne Telegram und suche nach <span className="text-blue-400 font-mono">@BotFather</span></span>
+          </li>
+          <li className="flex gap-3">
+            <span className="text-blue-400 font-bold shrink-0">2.</span>
+            <span>Schicke dem Bot den Befehl <span className="font-mono bg-[#0d1117] px-1.5 py-0.5 rounded text-xs">/newbot</span></span>
+          </li>
+          <li className="flex gap-3">
+            <span className="text-blue-400 font-bold shrink-0">3.</span>
+            <span>Wähle einen <strong>Namen</strong> für deinen Bot (z.B. <span className="italic">Mein Ideen Bot</span>)</span>
+          </li>
+          <li className="flex gap-3">
+            <span className="text-blue-400 font-bold shrink-0">4.</span>
+            <span>Wähle einen <strong>Benutzernamen</strong> — muss auf <span className="font-mono bg-[#0d1117] px-1.5 py-0.5 rounded text-xs">bot</span> enden (z.B. <span className="italic">mein_ideen_bot</span>)</span>
+          </li>
+          <li className="flex gap-3">
+            <span className="text-blue-400 font-bold shrink-0">5.</span>
+            <span>BotFather schickt dir deinen Token — sieht so aus:<br /><span className="font-mono text-xs text-green-400">1234567890:AAH...</span><br />Kopiere ihn und füge ihn oben ein.</span>
+          </li>
+        </ol>
+        <button onClick={onClose} className="mt-5 w-full bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-2.5 text-sm font-semibold transition-colors">
+          Verstanden
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const TIERS = [
   { id: "gcloud",  label: "Google Cloud",         desc: "24/7 auf Google Cloud VM. Einmalige Einrichtung — danach für immer kostenlos.", price: "€1,90 einmalig" },
   { id: "render",  label: "Render.com",           desc: "Einfachstes Hosting, automatisches Deploy.",                                    price: "€9,99 einmalig" },
@@ -26,6 +61,7 @@ export default function Home() {
   const [form, setForm] = useState<FormData>({ email: "", telegramToken: "", botName: "" });
   const [showTiers, setShowTiers] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showBotFatherModal, setShowBotFatherModal] = useState(false);
   const [botSummary, setBotSummary] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -144,7 +180,8 @@ export default function Home() {
   }
 
   // ── Haupt-Chat ────────────────────────────────────────────────────────────
-  return (
+  return (<>
+    {showBotFatherModal && <BotFatherModal onClose={() => setShowBotFatherModal(false)} />}
     <div className="flex flex-col h-full max-w-2xl mx-auto px-4 py-8">
       <div className="text-center mb-8">
         <div className="text-2xl font-bold tracking-tight mb-1">Bot<span className="text-blue-400">Shell</span></div>
@@ -204,7 +241,12 @@ export default function Home() {
                   value={form[f.key as keyof FormData]}
                   onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
                 />
-                {f.hint && <div className="text-xs text-gray-600 mt-1">{f.hint}</div>}
+                {f.hint && (
+                  <button type="button" onClick={() => setShowBotFatherModal(true)}
+                    className="text-xs text-blue-400 hover:underline mt-1 text-left">
+                    {f.hint}
+                  </button>
+                )}
               </div>
             ))}
 
@@ -236,5 +278,5 @@ export default function Home() {
         </div>
       )}
     </div>
-  );
+  </>);
 }
