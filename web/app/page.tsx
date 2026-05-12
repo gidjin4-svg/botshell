@@ -329,7 +329,22 @@ export default function Home() {
   const [showGroqTutorial, setShowGroqTutorial] = useState(false);
   const [chatKey, setChatKey] = useState(0);
 
+  // Restore key from sessionStorage on mount
+  useEffect(() => {
+    const saved = sessionStorage.getItem("groq_key");
+    if (saved?.startsWith("gsk_")) {
+      setGroqKeyInput(saved);
+      setGroqKeyConfirmed(true);
+    }
+  }, []);
+
+  function confirmKey() {
+    sessionStorage.setItem("groq_key", groqKeyInput);
+    setGroqKeyConfirmed(true);
+  }
+
   function handleChangeKey() {
+    sessionStorage.removeItem("groq_key");
     setGroqKeyConfirmed(false);
     setGroqKeyInput("");
   }
@@ -356,10 +371,10 @@ export default function Home() {
               placeholder="gsk_..."
               value={groqKeyInput}
               onChange={e => setGroqKeyInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && groqKeyInput.startsWith("gsk_") && setGroqKeyConfirmed(true)}
+              onKeyDown={e => e.key === "Enter" && groqKeyInput.startsWith("gsk_") && confirmKey()}
               autoFocus
             />
-            <button onClick={() => setGroqKeyConfirmed(true)} disabled={!groqKeyInput.startsWith("gsk_")}
+            <button onClick={confirmKey} disabled={!groqKeyInput.startsWith("gsk_")}
               className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded-xl py-3 text-sm font-semibold transition-colors">
               Los geht's
             </button>
