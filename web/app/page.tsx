@@ -116,7 +116,8 @@ export default function Home() {
   }, [groqKeyConfirmed]);
 
   function handleRestart() {
-    setMessages([{ role: "assistant", content: WELCOME }]);
+    setGroqKeyConfirmed(false);
+    setMessages([]);
     setStep("describe");
     setSelectedTier(null);
     setForm({ email: "", telegramToken: "", botName: "" });
