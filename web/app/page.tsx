@@ -116,16 +116,7 @@ export default function Home() {
   }, [groqKeyConfirmed]);
 
   function handleRestart() {
-    setGroqKeyConfirmed(false);
-    setMessages([]);
-    setStep("describe");
-    setSelectedTier(null);
-    setForm({ email: "", telegramToken: "", botName: "" });
-    setShowTiers(false);
-    setShowForm(false);
-    setBotSummary("");
-    setInput("");
-    setCopied(false);
+    window.location.reload();
   }
 
   async function copyInstructions() {
