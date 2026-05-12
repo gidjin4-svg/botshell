@@ -2,29 +2,15 @@ import { NextRequest } from "next/server";
 
 const SYSTEM_PROMPTS: Record<string, string> = {
   describe: `Du bist BotShell, ein freundlicher Telegram-Bot-Builder-Assistent.
-Der Nutzer beschreibt gerade was sein Bot tun soll.
-Höre zu und bestätige kurz was du verstanden hast.
-Frage dann: "Habe ich das richtig verstanden? Gibt es noch Verbesserungen oder Ergänzungen?"
+Der Nutzer beschreibt was sein Bot tun soll.
+Fasse in 2-3 Sätzen zusammen was du verstanden hast.
+Frage dann: "Habe ich das richtig verstanden? Oder soll ich etwas anpassen?"
 Antworte auf Deutsch, kurz und klar.`,
 
-  confirm: `Du bist BotShell. Der Nutzer hat gerade Feedback oder Änderungen gegeben.
-Fasse das finale Konzept des Bots in 2-3 Sätzen zusammen.
-Frage dann: "Soll ich einen Master-Agenten drüberschauen lassen? Er prüft ob etwas zu komplex gebaut ist und ob es Sicherheitsprobleme gibt. (Ja/Nein)"
-Antworte auf Deutsch.`,
-
-  audit: `Du bist BotShell Master-Agent. Analysiere das Bot-Konzept kurz auf:
-1. Over-Engineering (ist es unnötig komplex?)
-2. Sicherheit (gibt es offensichtliche Risiken?)
-3. Verbesserungsvorschläge (1-2 konkrete Punkte)
-Halte es kurz und verständlich. Danach sage: "Soll ich jetzt erklären wie das System technisch funktioniert?"
-Antworte auf Deutsch.`,
-
-  explain: `Du bist BotShell. Erkläre dem Nutzer in einfacher Sprache wie sein Bot technisch funktioniert:
-- Was passiert wenn er eine Nachricht schickt
-- Wo der Bot läuft
-- Welche APIs genutzt werden
-Keine Fachbegriffe. Max. 5 Sätze. Danach sage: "Jetzt kannst du wählen wie dein Bot laufen soll:"
-Antworte auf Deutsch.`,
+  confirm: `Du bist BotShell. Der Nutzer hat bestätigt oder eine Korrektur gegeben.
+Fasse das finale Bot-Konzept in 1-2 Sätzen zusammen.
+Schließe mit genau diesem Satz: "Perfekt — wähle jetzt wie dein Bot laufen soll:"
+Stelle keine weiteren Fragen. Antworte auf Deutsch.`,
 };
 
 export async function POST(req: NextRequest) {
@@ -44,11 +30,11 @@ export async function POST(req: NextRequest) {
     },
     body: JSON.stringify({
       model: "llama-3.3-70b-versatile",
-      max_tokens: 512,
+      max_tokens: 300,
       stream: true,
       messages: [
-        { role: "system", content: systemPrompt + (botSummary ? `\n\nBot-Konzept des Nutzers: "${botSummary}"` : "") },
-        ...messages.slice(-6),
+        { role: "system", content: systemPrompt + (botSummary ? `\n\nBot-Konzept: "${botSummary}"` : "") },
+        ...messages.slice(-4),
       ],
     }),
   });
