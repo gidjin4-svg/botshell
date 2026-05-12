@@ -195,13 +195,14 @@ function Chat({ groqKey, onChangeKey }: { groqKey: string; onChangeKey: () => vo
 
         <div className="flex items-center justify-between mb-6">
           <div className="text-xl font-bold tracking-tight">Bot<span className="text-blue-400">Shell</span></div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button onClick={() => window.location.reload()}
-              className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
-              Neu starten
+              className="text-xs bg-[#161b22] border border-[#30363d] hover:border-blue-400 text-gray-300 px-3 py-1.5 rounded-lg transition-colors">
+              Neuen Bot
             </button>
-            <button onClick={onChangeKey} className="text-xs text-gray-600 hover:text-gray-400 transition-colors">
-              Key ändern
+            <button onClick={onChangeKey}
+              className="text-xs text-gray-600 hover:text-gray-400 transition-colors">
+              Von vorne
             </button>
           </div>
         </div>
