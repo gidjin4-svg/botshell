@@ -4,20 +4,17 @@ import { useState, useRef, useEffect } from "react";
 
 type Role = "user" | "assistant";
 type Step = "describe" | "confirm" | "audit" | "explain" | "tier" | "form" | "done";
-type AiMode = "groq" | "claude" | null;
 
 interface Message { role: Role; content: string; }
-interface FormData { email: string; telegramToken: string; botName: string; groqKey: string; }
+interface FormData { email: string; telegramToken: string; botName: string; }
 
 const TIERS = [
-  { id: "free",    label: "Lokal (PC)",         desc: "Bot läuft auf deinem PC. PC muss an bleiben.", price: "Gratis" },
-  { id: "gcloud",  label: "Google Cloud",        desc: "24/7 auf Google Cloud VM. Kostenlos bei Google.", price: "€9,99 einmalig" },
-  { id: "render",  label: "Render.com",          desc: "Einfachstes Hosting, automatisches Deploy.", price: "€9,99 einmalig" },
-  { id: "hetzner", label: "Hetzner + Claude CLI", desc: "Volle Power: eigener Server + Claude CLI.", price: "€4-5/Monat" },
+  { id: "gcloud",  label: "Google Cloud",         desc: "24/7 auf Google Cloud VM. Einmalige Einrichtung — danach für immer kostenlos.", price: "€1,90 einmalig" },
+  { id: "render",  label: "Render.com",           desc: "Einfachstes Hosting, automatisches Deploy.",                                    price: "€9,99 einmalig" },
+  { id: "hetzner", label: "Hetzner + Claude CLI", desc: "Volle Power: eigener Server + Claude CLI.",                                     price: "~€4/Monat" },
 ];
 
 export default function Home() {
-  const [aiMode, setAiMode] = useState<AiMode>(null);
   const [groqKeyInput, setGroqKeyInput] = useState("");
   const [groqKeyConfirmed, setGroqKeyConfirmed] = useState(false);
 
@@ -26,7 +23,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<Step>("describe");
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
-  const [form, setForm] = useState<FormData>({ email: "", telegramToken: "", botName: "", groqKey: "" });
+  const [form, setForm] = useState<FormData>({ email: "", telegramToken: "", botName: "" });
   const [showTiers, setShowTiers] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [botSummary, setBotSummary] = useState("");
@@ -35,10 +32,10 @@ export default function Home() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
 
   useEffect(() => {
-    if (groqKeyConfirmed || aiMode === "claude") {
+    if (groqKeyConfirmed) {
       setMessages([{ role: "assistant", content: "Willkommen bei BotShell.\n\nBeschreibe in einem Satz was dein Telegram Bot tun soll — ich kümmere mich um den Rest." }]);
     }
-  }, [groqKeyConfirmed, aiMode]);
+  }, [groqKeyConfirmed]);
 
   async function send(overrideInput?: string) {
     const text = (overrideInput ?? input).trim();
@@ -52,11 +49,7 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: newMessages, step, botSummary,
-          useGroq: aiMode === "groq",
-          groqKey: aiMode === "groq" ? groqKeyInput : undefined,
-        }),
+        body: JSON.stringify({ messages: newMessages, step, botSummary, groqKey: groqKeyInput }),
       });
       if (!res.ok) throw new Error();
       const reader = res.body!.getReader();
@@ -88,9 +81,7 @@ export default function Home() {
     setShowForm(true);
     setStep("form");
     const label = TIERS.find(t => t.id === tierId)?.label ?? tierId;
-    const msg = tierId === "free"
-      ? "Fülle das Formular aus — du bekommst alles was du brauchst."
-      : tierId === "hetzner"
+    const msg = tierId === "hetzner"
       ? "Volle Power! Du brauchst einen Hetzner Account und ein Claude Abo."
       : `${label} — fülle das Formular aus. Du bekommst deinen Setup-Befehl per E-Mail.`;
     setMessages(prev => [...prev,
@@ -106,10 +97,10 @@ export default function Home() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier: selectedTier, form: { ...form, groqKey: aiMode === "groq" ? groqKeyInput : form.groqKey }, botSummary }),
+        body: JSON.stringify({ tier: selectedTier, form: { ...form, groqKey: groqKeyInput }, botSummary }),
       });
       const data = await res.json();
-      if ((selectedTier === "gcloud" || selectedTier === "render") && data.checkoutUrl) {
+      if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
         setStep("done");
@@ -120,40 +111,12 @@ export default function Home() {
     finally { setLoading(false); }
   }
 
-  // ── Onboarding: KI-Wahl ───────────────────────────────────────────────────
-  if (!aiMode) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full px-4">
-        <div className="text-2xl font-bold tracking-tight mb-1">Bot<span className="text-blue-400">Shell</span></div>
-        <div className="text-sm text-gray-500 mb-12">Telegram Bots in unter 10 Minuten</div>
-
-        <div className="w-full max-w-sm space-y-3">
-          <div className="text-xs text-gray-500 text-center mb-4 uppercase tracking-wide">Wie soll der Assistent arbeiten?</div>
-
-          <button onClick={() => setAiMode("groq")}
-            className="w-full text-left bg-[#161b22] border border-[#30363d] hover:border-green-500 rounded-xl p-4 transition-colors">
-            <div className="font-semibold text-sm text-[#e6edf3]">Kostenlos — Groq AI</div>
-            <div className="text-xs text-gray-500 mt-1">Du bringst deinen eigenen kostenlosen Groq Key. Kein Cent für den Chat.</div>
-            <div className="text-xs text-green-400 mt-2">Gratis</div>
-          </button>
-
-          <button onClick={() => setAiMode("claude")}
-            className="w-full text-left bg-[#161b22] border border-[#30363d] hover:border-blue-400 rounded-xl p-4 transition-colors">
-            <div className="font-semibold text-sm text-[#e6edf3]">Premium — Claude AI</div>
-            <div className="text-xs text-gray-500 mt-1">Bessere Antworten, mehr Präzision. Kosten werden beim Server-Tier verrechnet.</div>
-            <div className="text-xs text-blue-400 mt-2">Im Tierpreis enthalten</div>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // ── Groq Key eingeben ─────────────────────────────────────────────────────
-  if (aiMode === "groq" && !groqKeyConfirmed) {
+  if (!groqKeyConfirmed) {
     return (
       <div className="flex flex-col items-center justify-center h-full px-4">
         <div className="text-2xl font-bold tracking-tight mb-1">Bot<span className="text-blue-400">Shell</span></div>
-        <div className="text-sm text-gray-500 mb-10">Groq API Key eingeben</div>
+        <div className="text-sm text-gray-500 mb-10">Telegram Bots in unter 10 Minuten</div>
 
         <div className="w-full max-w-sm">
           <div className="text-xs text-gray-500 mb-3">
@@ -167,15 +130,13 @@ export default function Home() {
             value={groqKeyInput}
             onChange={e => setGroqKeyInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && groqKeyInput.startsWith("gsk_") && setGroqKeyConfirmed(true)}
+            autoFocus
           />
           <button
             onClick={() => setGroqKeyConfirmed(true)}
             disabled={!groqKeyInput.startsWith("gsk_")}
-            className="w-full bg-green-700 hover:bg-green-600 disabled:opacity-40 text-white rounded-xl py-3 text-sm font-semibold transition-colors">
+            className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded-xl py-3 text-sm font-semibold transition-colors">
             Weiter
-          </button>
-          <button onClick={() => setAiMode(null)} className="w-full text-center text-xs text-gray-600 mt-3 hover:text-gray-400">
-            ← Zurück
           </button>
         </div>
       </div>
@@ -187,9 +148,7 @@ export default function Home() {
     <div className="flex flex-col h-full max-w-2xl mx-auto px-4 py-8">
       <div className="text-center mb-8">
         <div className="text-2xl font-bold tracking-tight mb-1">Bot<span className="text-blue-400">Shell</span></div>
-        <div className="text-xs text-gray-600">
-          {aiMode === "groq" ? "Groq AI (kostenlos)" : "Claude AI (Premium)"}
-        </div>
+        <div className="text-xs text-gray-600">Powered by Groq AI</div>
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-hide space-y-4 mb-4">
@@ -249,22 +208,9 @@ export default function Home() {
               </div>
             ))}
 
-            {(selectedTier !== "hetzner" && aiMode !== "groq") && (
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Groq API Key (kostenlos)</label>
-                <input required className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 text-sm font-mono text-[#e6edf3] focus:outline-none focus:border-blue-400"
-                  placeholder="gsk_..."
-                  value={form.groqKey}
-                  onChange={e => setForm(prev => ({ ...prev, groqKey: e.target.value }))}
-                />
-                <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer"
-                  className="inline-block mt-1 text-xs text-blue-400 hover:underline">→ Kostenlosen Groq Key erstellen</a>
-              </div>
-            )}
-
             <button type="submit" disabled={loading}
-              className="w-full bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white rounded-lg py-2.5 text-sm font-semibold transition-colors">
-              {selectedTier === "gcloud" || selectedTier === "render" ? "Weiter zur Zahlung (€9,99)" : "Bot erstellen"}
+              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg py-2.5 text-sm font-semibold transition-colors">
+              {selectedTier === "gcloud" ? "Weiter zur Zahlung (€1,90)" : selectedTier === "render" ? "Weiter zur Zahlung (€9,99)" : "Bot erstellen"}
             </button>
           </form>
         )}

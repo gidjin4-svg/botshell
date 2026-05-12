@@ -6,7 +6,7 @@ function getStripe() {
 }
 
 function generateBotCode(botSummary: string, tier: string, form: { botName: string; groqKey: string; telegramToken: string }): string {
-  const useGroq = tier === "free" || tier === "oracle";
+  const useGroq = tier !== "hetzner";
 
   return `import os
 import logging
@@ -85,20 +85,6 @@ function getInstructions(tier: string, form: { telegramToken: string; groqKey: s
   const botCode = generateBotCode(botSummary, tier, form);
   const encodedCode = Buffer.from(botCode).toString("base64");
 
-  if (tier === "free") {
-    return `Dein Bot ist fertig! Hier sind deine nächsten Schritte:
-
-1. Lade das Setup-Paket herunter (Link wird per E-Mail geschickt)
-2. Entpacke es auf deinem PC
-3. Führe setup-lokal.bat (Windows) oder setup-lokal.sh (Mac/Linux) aus
-4. Dein Bot läuft — solange dein PC an ist
-
-Bot-Name: ${form.botName}
-Was er kann: ${botSummary}
-
-Wichtig: Dein PC muss an bleiben damit der Bot funktioniert. Für 24/7-Betrieb empfehlen wir Oracle (einmalig €9,99).`;
-  }
-
   if (tier === "hetzner") {
     return `Dein Bot ist fertig! Für den Hetzner-Tier brauchst du:
 
@@ -131,19 +117,20 @@ Was er kann: ${botSummary}`;
 export async function POST(req: NextRequest) {
   const { tier, form, botSummary } = await req.json();
 
-  if (tier === "oracle" || tier === "gcloud" || tier === "render") {
+  if (tier === "gcloud" || tier === "render") {
+    const amount = tier === "gcloud" ? 190 : 999;
     const session = await getStripe().checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [{
         price_data: {
           currency: "eur",
           product_data: { name: `BotShell — ${form.botName}`, description: botSummary },
-          unit_amount: 999,
+          unit_amount: amount,
         },
         quantity: 1,
       }],
       mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_URL}/success?session_id={CHECKOUT_SESSION_ID}&tier=oracle`,
+      success_url: `${process.env.NEXT_PUBLIC_URL}/success?session_id={CHECKOUT_SESSION_ID}&tier=${tier}`,
       cancel_url: `${process.env.NEXT_PUBLIC_URL}`,
       metadata: {
         tier,

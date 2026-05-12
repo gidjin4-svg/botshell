@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest } from "next/server";
 
 const SYSTEM_PROMPTS: Record<string, string> = {
@@ -29,47 +28,12 @@ Antworte auf Deutsch.`,
 };
 
 export async function POST(req: NextRequest) {
-  const { messages, step, botSummary, useGroq, groqKey } = await req.json();
+  const { messages, step, botSummary, groqKey } = await req.json();
 
-  // Groq path (user's own key)
-  if (useGroq && groqKey) {
-    return streamGroq(messages, step, groqKey);
+  if (!groqKey) {
+    return new Response("Groq API Key fehlt.", { status: 400 });
   }
 
-  // Claude path (Oliver's API key)
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const systemPrompt = SYSTEM_PROMPTS[step] ?? SYSTEM_PROMPTS.describe;
-
-  const apiMessages = messages.slice(-6).map((m: { role: string; content: string }) => ({
-    role: m.role as "user" | "assistant",
-    content: m.content,
-  }));
-
-  const stream = client.messages.stream({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 512,
-    system: systemPrompt + (botSummary ? `\n\nBot-Konzept des Nutzers: "${botSummary}"` : ""),
-    messages: apiMessages,
-  });
-
-  const encoder = new TextEncoder();
-  const readable = new ReadableStream({
-    async start(controller) {
-      for await (const event of stream) {
-        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-          controller.enqueue(encoder.encode(event.delta.text));
-        }
-      }
-      controller.close();
-    },
-  });
-
-  return new Response(readable, {
-    headers: { "Content-Type": "text/plain; charset=utf-8" },
-  });
-}
-
-async function streamGroq(messages: { role: string; content: string }[], step: string, groqKey: string) {
   const systemPrompt = SYSTEM_PROMPTS[step] ?? SYSTEM_PROMPTS.describe;
 
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -83,7 +47,7 @@ async function streamGroq(messages: { role: string; content: string }[], step: s
       max_tokens: 512,
       stream: true,
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: systemPrompt + (botSummary ? `\n\nBot-Konzept des Nutzers: "${botSummary}"` : "") },
         ...messages.slice(-6),
       ],
     }),
